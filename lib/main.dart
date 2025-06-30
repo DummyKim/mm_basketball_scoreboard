@@ -23,9 +23,3 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.black,
         textTheme: const TextTheme(
           bodyMedium: TextStyle(fontFamily: 'DSEG7Classic'),
-        ),
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
