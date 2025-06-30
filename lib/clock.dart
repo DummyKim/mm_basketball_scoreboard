@@ -112,7 +112,7 @@ class _ShotClockState extends State<ShotClock> {
       color: Colors.yellow,
       fontSize: size,
     );
-    return Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         GestureDetector(
@@ -122,10 +122,14 @@ class _ShotClockState extends State<ShotClock> {
             style: style,
           ),
         ),
-        const SizedBox(width: 20),
-        ElevatedButton(onPressed: () => _reset(const Duration(seconds: 14)), child: const Text('14s')),
-        const SizedBox(width: 10),
-        ElevatedButton(onPressed: _reset, child: const Text('Reset')),
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            ElevatedButton(onPressed: () => _reset(const Duration(seconds: 14)), child: const Text('14s')),
+            const SizedBox(width: 10),
+            ElevatedButton(onPressed: _reset, child: const Text('Reset')),
+          ],
+        ),
       ],
     );
   }

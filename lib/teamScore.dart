@@ -56,17 +56,21 @@ class _TeamScoreState extends State<TeamScore> {
         ),
         Row(
           children: [
-            IconButton(
-              onPressed: () => setState(() { if (_score > 0) _score--; }),
-              icon: const Icon(Icons.remove, color: Colors.white),
-            ),
             Text(
               _score.toString().padLeft(3, '0'),
               style: widget.scoreStyle,
             ),
-            IconButton(
-              onPressed: () => setState(() { _score++; }),
-              icon: const Icon(Icons.add, color: Colors.white),
+            Column(
+              children: [
+                IconButton(
+                  onPressed: () => setState(() { _score++; }),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                ),
+                IconButton(
+                  onPressed: () => setState(() { if (_score > 0) _score--; }),
+                  icon: const Icon(Icons.remove, color: Colors.white),
+                ),
+              ],
             ),
           ],
         ),
