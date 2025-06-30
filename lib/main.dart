@@ -1,122 +1,284 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      title: 'Basketball Scoreboard',
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(fontFamily: 'DSEG7Classic'),
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const ScoreboardPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class ScoreboardPage extends StatefulWidget {
+  const ScoreboardPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ScoreboardPage> createState() => _ScoreboardPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _ScoreboardPageState extends State<ScoreboardPage> {
+  static const Duration gameStartDuration = Duration(minutes: 10);
+  static const Duration shotClockStartDuration = Duration(seconds: 24);
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  Duration _gameTime = gameStartDuration;
+  Duration _shotClock = shotClockStartDuration;
+  Timer? _gameTimer;
+  Timer? _shotClockTimer;
+
+  int _homeScore = 0;
+  int _awayScore = 0;
+
+  int _homeFouls = 0;
+  int _awayFouls = 0;
+
+  String _homeName = 'HOME';
+  String _awayName = 'AWAY';
+  String _quarter = '1Q';
+
+  void _startGameTimer() {
+    if (_gameTimer?.isActive ?? false) return;
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_gameTime.inSeconds > 0) {
+        setState(() {
+          _gameTime -= const Duration(seconds: 1);
+        });
+      } else {
+        timer.cancel();
+      }
     });
+  }
+
+  void _startShotClock() {
+    if (_shotClockTimer?.isActive ?? false) return;
+    _shotClockTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      if (_shotClock.inSeconds > 0) {
+        setState(() {
+          _shotClock -= const Duration(seconds: 1);
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _resetShotClock() {
+    setState(() {
+      _shotClockTimer?.cancel();
+      _shotClock = shotClockStartDuration;
+    });
+  }
+
+  void _setShotClock14() {
+    setState(() {
+      _shotClockTimer?.cancel();
+      _shotClock = const Duration(seconds: 14);
+    });
+  }
+
+  void _editTeamName(bool home) async {
+    final controller = TextEditingController(text: home ? _homeName : _awayName);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Team Name'),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('OK')),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        if (home) {
+          _homeName = result;
+        } else {
+          _awayName = result;
+        }
+      });
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final TextStyle timerStyle = TextStyle(
+      fontFamily: 'DSEG7Classic',
+      color: Colors.red,
+      fontSize: 80,
+    );
+    final TextStyle shotStyle = TextStyle(
+      fontFamily: 'DSEG7Classic',
+      color: Colors.yellow,
+      fontSize: 60,
+    );
+    final TextStyle scoreStyle = TextStyle(
+      fontFamily: 'DSEG7Classic',
+      color: Colors.white,
+      fontSize: 80,
+    );
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: SafeArea(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _teamColumn(true, scoreStyle),
+                GestureDetector(
+                  onTap: _startGameTimer,
+                  child: Text(
+                    _formatDuration(_gameTime),
+                    style: timerStyle,
+                  ),
+                ),
+                _teamColumn(false, scoreStyle),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: _startShotClock,
+                  child: Text(
+                    _shotClock.inSeconds.toString().padLeft(2, '0'),
+                    style: shotStyle,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(onPressed: _setShotClock14, child: const Text('14s')),
+                const SizedBox(width: 10),
+                ElevatedButton(onPressed: _resetShotClock, child: const Text('Reset')),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PopupMenuButton<String>(
+                  initialValue: _quarter,
+                  onSelected: (val) => setState(() => _quarter = val),
+                  itemBuilder: (context) => ['1Q', '2Q', '3Q', '4Q', 'OT']
+                      .map((e) => PopupMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text('Quarter: $_quarter'),
+                  ),
+                ),
+                const SizedBox(width: 50),
+                _foulCounter(true),
+                const SizedBox(width: 30),
+                _foulCounter(false),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                ),
+              ],
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  Widget _teamColumn(bool home, TextStyle scoreStyle) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => _editTeamName(home),
+          child: Text(
+            home ? _homeName : _awayName,
+            style: const TextStyle(fontSize: 24, color: Colors.white),
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() {
+                if (home) {
+                  if (_homeScore > 0) _homeScore--;
+                } else {
+                  if (_awayScore > 0) _awayScore--;
+                }
+              }),
+              icon: const Icon(Icons.remove, color: Colors.white),
+            ),
+            Text(
+              home ? _homeScore.toString().padLeft(3, '0') : _awayScore.toString().padLeft(3, '0'),
+              style: scoreStyle,
+            ),
+            IconButton(
+              onPressed: () => setState(() {
+                if (home) {
+                  _homeScore++;
+                } else {
+                  _awayScore++;
+                }
+              }),
+              icon: const Icon(Icons.add, color: Colors.white),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _foulCounter(bool home) {
+    return Row(
+      children: [
+        Text('${home ? _homeName : _awayName} Fouls: ${home ? _homeFouls : _awayFouls}'),
+        IconButton(
+          onPressed: () => setState(() {
+            if (home) {
+              if (_homeFouls > 0) _homeFouls--;
+            } else {
+              if (_awayFouls > 0) _awayFouls--;
+            }
+          }),
+          icon: const Icon(Icons.remove, color: Colors.white),
+        ),
+        IconButton(
+          onPressed: () => setState(() {
+            if (home) {
+              _homeFouls++;
+            } else {
+              _awayFouls++;
+            }
+          }),
+          icon: const Icon(Icons.add, color: Colors.white),
+        ),
+      ],
     );
   }
 }
