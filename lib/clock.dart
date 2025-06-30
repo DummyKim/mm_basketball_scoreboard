@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 class GameClock extends StatefulWidget {
   final Duration start;
-  const GameClock({super.key, required this.start});
+  final double fontSizeFactor;
+  const GameClock({super.key, required this.start, this.fontSizeFactor = 0.3});
 
   @override
   State<GameClock> createState() => _GameClockState();
@@ -44,10 +45,11 @@ class _GameClockState extends State<GameClock> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size.height * widget.fontSizeFactor;
     final style = TextStyle(
       fontFamily: 'DSEG7Classic',
       color: Colors.red,
-      fontSize: 80,
+      fontSize: size,
     );
     return GestureDetector(
       onTap: _start,
@@ -61,7 +63,8 @@ class _GameClockState extends State<GameClock> {
 
 class ShotClock extends StatefulWidget {
   final Duration start;
-  const ShotClock({super.key, required this.start});
+  final double fontSizeFactor;
+  const ShotClock({super.key, required this.start, this.fontSizeFactor = 0.2});
 
   @override
   State<ShotClock> createState() => _ShotClockState();
@@ -103,10 +106,11 @@ class _ShotClockState extends State<ShotClock> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size.height * widget.fontSizeFactor;
     final style = TextStyle(
       fontFamily: 'DSEG7Classic',
       color: Colors.yellow,
-      fontSize: 60,
+      fontSize: size,
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

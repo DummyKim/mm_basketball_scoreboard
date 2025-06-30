@@ -48,7 +48,10 @@ class _TeamScoreState extends State<TeamScore> {
           onTap: _editName,
           child: Text(
             _name,
-            style: const TextStyle(fontSize: 24, color: Colors.white),
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.height * 0.05,
+              color: Colors.white,
+            ),
           ),
         ),
         Row(
