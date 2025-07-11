@@ -1,16 +1,20 @@
 # mm_basketball_scoreboard
 
-A new Flutter project.
+A fullscreen basketball scoreboard built with Flutter.
 
-## Getting Started
+## Features
+- Locks to landscape orientation and hides system UI for an immersive view
+- Game and shot clocks with tap to start/pause and edit screen for custom times
+- 14-second and reset buttons for the shot clock
+- Editable team names with plus/minus score buttons
+- Quarter selector and foul counters
+- Settings page with sound and vibration toggles
 
-This project is a starting point for a Flutter application.
+Use `flutter run` to launch on a device or emulator.
 
-A few resources to get you started if this is your first Flutter project:
+### Font
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The `DSEG7Classic-Bold.ttf` file required for the LCD-style text is not
+included in this repository. Download it from the
+[DSEG project](https://github.com/keshikan/DSEG) and place it in
+`assets/fonts/` before running the app.
